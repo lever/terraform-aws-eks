@@ -91,7 +91,7 @@ resource "aws_autoscaling_group" "workers" {
     [
       {
         "key"                 = "Name"
-        "value"               = "${aws_eks_cluster.this.name}-${lookup(var.worker_groups[count.index], "name", count.index)}-eks_asg"
+        "value"               = "${aws_eks_cluster.this.name}-${lookup(var.worker_groups[count.index], "name", count.index)}"
         "propagate_at_launch" = true
       },
       {
