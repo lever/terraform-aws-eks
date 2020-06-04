@@ -12,7 +12,7 @@ In the following examples at least 1 worker group that uses on-demand instances 
 
 ```yaml
 nodeSelector:
-  kubernetes.io/lifecycle: spot
+  kubernetes.io/lifecycle: normal
 ```
 
 Notes:
@@ -32,8 +32,7 @@ Example worker group configuration that uses an ASG with launch configuration fo
       name                = "on-demand-1"
       instance_type       = "m4.xlarge"
       asg_max_size        = 1
-      autoscaling_enabled = true
-      kubelet_extra_args  = "--node-labels=kubernetes.io/lifecycle=normal"
+      kubelet_extra_args  = "--node-labels=node.kubernetes.io/lifecycle=normal"
       suspended_processes = ["AZRebalance"]
     },
     {
@@ -41,8 +40,7 @@ Example worker group configuration that uses an ASG with launch configuration fo
       spot_price          = "0.199"
       instance_type       = "c4.xlarge"
       asg_max_size        = 20
-      autoscaling_enabled = true
-      kubelet_extra_args  = "--node-labels=kubernetes.io/lifecycle=spot"
+      kubelet_extra_args  = "--node-labels=node.kubernetes.io/lifecycle=spot"
       suspended_processes = ["AZRebalance"]
     },
     {
@@ -50,8 +48,7 @@ Example worker group configuration that uses an ASG with launch configuration fo
       spot_price          = "0.20"
       instance_type       = "m4.xlarge"
       asg_max_size        = 20
-      autoscaling_enabled = true
-      kubelet_extra_args  = "--node-labels=kubernetes.io/lifecycle=spot"
+      kubelet_extra_args  = "--node-labels=node.kubernetes.io/lifecycle=spot"
       suspended_processes = ["AZRebalance"]
     }
   ]
@@ -67,7 +64,6 @@ Launch Template support is a recent addition to both AWS and this module. It mig
       name                = "on-demand-1"
       instance_type       = "m4.xlarge"
       asg_max_size        = 10
-      autoscaling_enabled = true
       kubelet_extra_args  = "--node-labels=spot=false"
       suspended_processes = ["AZRebalance"]
     }
@@ -81,12 +77,14 @@ Launch Template support is a recent addition to both AWS and this module. It mig
       spot_instance_pools     = 4
       asg_max_size            = 5
       asg_desired_capacity    = 5
-      kubelet_extra_args      = "--node-labels=kubernetes.io/lifecycle=spot"
+      kubelet_extra_args      = "--node-labels=node.kubernetes.io/lifecycle=spot"
       public_ip               = true
     },
   ]
 ```
 
-## Important issues
+## Important Notes
 
-- https://github.com/kubernetes/autoscaler/issues/1133
+An issue with the cluster-autoscaler: https://github.com/kubernetes/autoscaler/issues/1133
+
+AWS have released their own termination handler now: https://github.com/aws/aws-node-termination-handler
