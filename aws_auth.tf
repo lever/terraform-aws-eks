@@ -20,17 +20,20 @@ locals {
   ]
 
   auth_worker_roles = [
-    for index in range(0, var.create_eks ? local.worker_group_count : 0) : {
-      worker_role_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${element(
-        coalescelist(
-          aws_iam_instance_profile.workers.*.role,
-          data.aws_iam_instance_profile.custom_worker_group_iam_instance_profile.*.role_name,
-          [""]
-        ),
-        index,
-      )}"
+    for map_key, map_value in var.create_eks ? local.worker_groups_map : {} : {
+      worker_role_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/${
+        length(
+          lookup(
+            aws_iam_instance_profile.workers,
+          map_key, {})) > 0 ? aws_iam_instance_profile.workers[map_key].role : lookup(
+          lookup(
+            data.aws_iam_instance_profile.custom_worker_group_iam_instance_profile,
+            map_key,
+            {}
+      ), "role_name", "")}"
+
       platform = lookup(
-        var.worker_groups[index],
+        map_value,
         "platform",
         local.workers_group_defaults["platform"]
       )
@@ -72,7 +75,7 @@ resource "kubernetes_config_map" "aws_auth" {
     labels = merge(
       {
         "app.kubernetes.io/managed-by" = "Terraform"
-        # / are replaced by . because label validator fails in this lib 
+        # / are replaced by . because label validator fails in this lib
         # https://github.com/kubernetes/apimachinery/blob/1bdd76d09076d4dc0362456e59c8f551f5f24a72/pkg/util/validation/validation.go#L166
         "terraform.io/module" = "terraform-aws-modules.eks.aws"
       },
