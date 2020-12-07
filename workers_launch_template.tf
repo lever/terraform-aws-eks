@@ -184,30 +184,6 @@ resource "aws_autoscaling_group" "workers_launch_template" {
     }
   }
 
-<<<<<<< HEAD
-  tags = concat(
-    [
-      {
-        "key" = "Name"
-        "value" = "${aws_eks_cluster.this[0].name}-${lookup(
-          var.worker_groups_launch_template[count.index],
-          "name",
-          count.index,
-        )}"
-        "propagate_at_launch" = true
-      },
-      {
-        "key"                 = "kubernetes.io/cluster/${aws_eks_cluster.this[0].name}"
-        "value"               = "owned"
-        "propagate_at_launch" = true
-      },
-    ],
-    local.asg_tags,
-    lookup(
-      var.worker_groups_launch_template[count.index],
-      "tags",
-      local.workers_group_defaults["tags"]
-=======
   dynamic "tag" {
     for_each = concat(
       [
@@ -240,7 +216,6 @@ resource "aws_autoscaling_group" "workers_launch_template" {
         "tags",
         local.workers_group_defaults["tags"]
       )
->>>>>>> upstream/master
     )
     content {
       key                 = tag.value.key
