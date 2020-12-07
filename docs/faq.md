@@ -101,6 +101,14 @@ Alternatively you can set the `asg_recreate_on_change = true` worker group optio
 
 You can also use a 3rd party tool like Gruntwork's kubergrunt. See the [`eks deploy`](https://github.com/gruntwork-io/kubergrunt#deploy) subcommand.
 
+## How do I create kubernetes resources when creating the cluster?
+
+You do not need to do anything extra since v12.1.0 of the module as long as the following conditions are met:
+- `manage_aws_auth = true` on the module (default)
+- the kubernetes provider is correctly configured like in the [Usage Example](https://github.com/terraform-aws-modules/terraform-aws-eks/blob/master/README.md#usage-example). Primarily the module's `cluster_id` output is used as input to the `aws_eks_cluster*` data sources.
+
+The `cluster_id` depends on a `null_resource` that polls the EKS cluster's endpoint until it is alive. This blocks initialisation of the kubernetes provider.
+
 ## `aws_auth.tf: At 2:14: Unknown token: 2:14 IDENT`
 
 You are attempting to use a Terraform 0.12 module with Terraform 0.11.
@@ -162,6 +170,18 @@ worker_groups = [
 
 4. With `kubectl get nodes` you can see cluster with mixed (Linux/Windows) nodes support.
 
+## Deploying from Windows: `/bin/sh` file does not exist
+
+The module is almost pure Terraform apart from the `wait_for_cluster` `null_resource` that runs a local provisioner. The module has a default configuration for Unix-like systems. In order to run the provisioner on Windows systems you must set the interpreter to a valid value. [PR #795 (comment)](https://github.com/terraform-aws-modules/terraform-aws-eks/pull/795#issuecomment-599191029) suggests the following value:
+```hcl
+module "eks" {
+  # ...
+  wait_for_cluster_interpreter = ["c:/git/bin/sh.exe", "-c"]
+}
+```
+
+Alternatively, you can disable the `null_resource` by disabling creation of the `aws-auth` ConfigMap via setting `manage_aws_auth = false` on the module. The ConfigMap will then need creating via a different method.
+
 ## Worker nodes with labels do not join a 1.16+ cluster
 
 Kubelet restricts the allowed list of labels in the `kubernetes.io` namespace that can be applied to nodes starting in 1.16.
@@ -169,3 +189,17 @@ Kubelet restricts the allowed list of labels in the `kubernetes.io` namespace th
 Older configurations used labels like `kubernetes.io/lifecycle=spot` and this is no longer allowed. Use `node.kubernetes.io/lifecycle=spot` instead.
 
 Reference the `--node-labels` argument for your version of Kubenetes for the allowed prefixes. [Documentation for 1.16](https://v1-16.docs.kubernetes.io/docs/reference/command-line-tools-reference/kubelet/)
+
+## What is the difference between `node_groups` and `worker_groups`?
+
+`node_groups` are [AWS-managed node groups](https://docs.aws.amazon.com/eks/latest/userguide/managed-node-groups.html) (configures "Node Groups" that you can find on the EKS dashboard). This system is supposed to ease some of the lifecycle around upgrading nodes. Although they do not do this automatically and you still need to manually trigger the updates.
+
+`worker_groups` are [self-managed nodes](https://docs.aws.amazon.com/eks/latest/userguide/worker.html) (provisions a typical "Autoscaling group" on EC2). It gives you full control over nodes in the cluster like using custom AMI for the nodes. As AWS says, "with worker groups the customer controls the data plane & AWS controls the control plane".
+
+Both can be used together in the same cluster.
+
+## I'm using both AWS-Managed node groups and Self-Managed worker groups and pods scheduled on a AWS Managed node groups are unable resolve DNS (even communication between pods)
+
+This happen because Core DNS can be scheduled on Self-Managed worker groups and by default, the terraform module doesn't create security group rules to ensure communication between pods schedulled on Self-Managed worker group and AWS-Managed node groups.
+
+You can set `var.worker_create_cluster_primary_security_group_rules` to `true` to create required rules.

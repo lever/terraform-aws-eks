@@ -19,6 +19,10 @@ provider "null" {
   version = "~> 2.1"
 }
 
+provider "template" {
+  version = "~> 2.1"
+}
+
 data "aws_eks_cluster" "cluster" {
   name = module.eks.cluster_id
 }
@@ -49,7 +53,7 @@ resource "random_string" "suffix" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "2.6.0"
+  version = "2.47.0"
 
   name                 = "test-vpc-spot"
   cidr                 = "10.0.0.0/16"
@@ -59,10 +63,11 @@ module "vpc" {
 }
 
 module "eks" {
-  source       = "../.."
-  cluster_name = local.cluster_name
-  subnets      = module.vpc.public_subnets
-  vpc_id       = module.vpc.vpc_id
+  source          = "../.."
+  cluster_name    = local.cluster_name
+  cluster_version = "1.17"
+  subnets         = module.vpc.public_subnets
+  vpc_id          = module.vpc.vpc_id
 
   worker_groups_launch_template = [
     {

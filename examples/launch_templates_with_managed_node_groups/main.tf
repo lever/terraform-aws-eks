@@ -1,9 +1,9 @@
 terraform {
-  required_version = ">= 0.12.2"
+  required_version = ">= 0.12.9"
 }
 
 provider "aws" {
-  version = ">= 2.28.1"
+  version = ">= 3.3.0"
   region  = var.region
 }
 
@@ -12,7 +12,7 @@ provider "random" {
 }
 
 provider "local" {
-  version = "~> 1.2"
+  version = "~>1.4"
 }
 
 provider "null" {
@@ -55,32 +55,39 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "2.47.0"
 
-  name                 = "test-vpc-lt"
-  cidr                 = "10.0.0.0/16"
+  name                 = "test-vpc"
+  cidr                 = "172.16.0.0/16"
   azs                  = data.aws_availability_zones.available.names
-  public_subnets       = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+  private_subnets      = ["172.16.1.0/24", "172.16.2.0/24", "172.16.3.0/24"]
+  public_subnets       = ["172.16.4.0/24", "172.16.5.0/24", "172.16.6.0/24"]
+  enable_nat_gateway   = true
+  single_nat_gateway   = true
   enable_dns_hostnames = true
+
+  private_subnet_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared" # EKS adds this and TF would want to remove then later
+  }
 }
 
 module "eks" {
   source          = "../.."
   cluster_name    = local.cluster_name
   cluster_version = "1.17"
-  subnets         = module.vpc.public_subnets
+  subnets         = module.vpc.private_subnets
   vpc_id          = module.vpc.vpc_id
 
-  worker_groups_launch_template = [
-    {
-      name                 = "worker-group-1"
-      instance_type        = "t2.small"
-      asg_desired_capacity = 2
-      public_ip            = true
-    },
-    {
-      name                 = "worker-group-2"
-      instance_type        = "t2.medium"
-      asg_desired_capacity = 1
-      public_ip            = true
-    },
-  ]
+  node_groups = {
+    example = {
+      desired_capacity = 1
+      max_capacity     = 15
+      min_capacity     = 1
+
+      launch_template_id      = aws_launch_template.default.id
+      launch_template_version = aws_launch_template.default.default_version
+
+      additional_tags = {
+        CustomTag = "EKS example"
+      }
+    }
+  }
 }

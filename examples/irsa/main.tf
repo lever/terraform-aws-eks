@@ -15,6 +15,10 @@ provider "null" {
   version = "~> 2.1"
 }
 
+provider "template" {
+  version = "~> 2.1"
+}
+
 data "aws_eks_cluster" "cluster" {
   name = module.eks.cluster_id
 }
@@ -37,7 +41,7 @@ data "aws_caller_identity" "current" {}
 
 module "vpc" {
   source               = "terraform-aws-modules/vpc/aws"
-  version              = "2.6.0"
+  version              = "2.47.0"
   name                 = "test-vpc"
   cidr                 = "10.0.0.0/16"
   azs                  = data.aws_availability_zones.available.names
@@ -51,11 +55,12 @@ module "vpc" {
 }
 
 module "eks" {
-  source       = "../.."
-  cluster_name = local.cluster_name
-  subnets      = module.vpc.public_subnets
-  vpc_id       = module.vpc.vpc_id
-  enable_irsa  = true
+  source          = "../.."
+  cluster_name    = local.cluster_name
+  cluster_version = "1.17"
+  subnets         = module.vpc.public_subnets
+  vpc_id          = module.vpc.vpc_id
+  enable_irsa     = true
 
   worker_groups = [
     {

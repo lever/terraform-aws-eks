@@ -1,5 +1,5 @@
 output "cluster_id" {
-  description = "The name/id of the EKS cluster."
+  description = "The name/id of the EKS cluster. Will block on cluster creation until the cluster is really ready"
   value       = element(concat(aws_eks_cluster.this.*.id, list("")), 0)
   # So that calling plans wait for the cluster to be available before attempting
   # to use it. They will not need to duplicate this null_resource
@@ -58,7 +58,12 @@ output "cluster_primary_security_group_id" {
 
 output "cloudwatch_log_group_name" {
   description = "Name of cloudwatch log group created"
-  value       = aws_cloudwatch_log_group.this[*].name
+  value       = element(concat(aws_cloudwatch_log_group.this[*].name, list("")), 0)
+}
+
+output "cloudwatch_log_group_arn" {
+  description = "Arn of cloudwatch log group created"
+  value       = element(concat(aws_cloudwatch_log_group.this[*].arn, list("")), 0)
 }
 
 output "kubeconfig" {
@@ -95,8 +100,8 @@ output "workers_asg_names" {
 output "workers_user_data" {
   description = "User data of worker groups"
   value = concat(
-    local.userdata,
-    local.launch_template_userdata,
+    data.template_file.userdata.*.rendered,
+    data.template_file.launch_template_userdata.*.rendered,
   )
 }
 
@@ -161,7 +166,32 @@ output "worker_iam_role_arn" {
   )[0]
 }
 
+output "fargate_profile_ids" {
+  description = "EKS Cluster name and EKS Fargate Profile names separated by a colon (:)."
+  value       = module.fargate.fargate_profile_ids
+}
+
+output "fargate_profile_arns" {
+  description = "Amazon Resource Name (ARN) of the EKS Fargate Profiles."
+  value       = module.fargate.fargate_profile_arns
+}
+
+output "fargate_iam_role_name" {
+  description = "IAM role name for EKS Fargate pods"
+  value       = module.fargate.iam_role_name
+}
+
+output "fargate_iam_role_arn" {
+  description = "IAM role ARN for EKS Fargate pods"
+  value       = module.fargate.iam_role_arn
+}
+
 output "node_groups" {
   description = "Outputs from EKS node groups. Map of maps, keyed by var.node_groups keys"
   value       = module.node_groups.node_groups
+}
+
+output "security_group_rule_cluster_https_worker_ingress" {
+  description = "Security group rule responsible for allowing pods to communicate with the EKS cluster API."
+  value       = aws_security_group_rule.cluster_https_worker_ingress
 }

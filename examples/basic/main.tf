@@ -19,6 +19,10 @@ provider "null" {
   version = "~> 2.1"
 }
 
+provider "template" {
+  version = "~> 2.1"
+}
+
 data "aws_eks_cluster" "cluster" {
   name = module.eks.cluster_id
 }
@@ -96,7 +100,7 @@ resource "aws_security_group" "all_worker_mgmt" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "2.6.0"
+  version = "2.47.0"
 
   name                 = "test-vpc"
   cidr                 = "10.0.0.0/16"
@@ -119,9 +123,10 @@ module "vpc" {
 }
 
 module "eks" {
-  source       = "../.."
-  cluster_name = local.cluster_name
-  subnets      = module.vpc.private_subnets
+  source          = "../.."
+  cluster_name    = local.cluster_name
+  cluster_version = "1.17"
+  subnets         = module.vpc.private_subnets
 
   tags = {
     Environment = "test"

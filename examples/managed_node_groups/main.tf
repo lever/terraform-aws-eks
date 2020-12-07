@@ -19,6 +19,10 @@ provider "null" {
   version = "~> 2.1"
 }
 
+provider "template" {
+  version = "~> 2.1"
+}
+
 data "aws_eks_cluster" "cluster" {
   name = module.eks.cluster_id
 }
@@ -49,7 +53,7 @@ resource "random_string" "suffix" {
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 2.6"
+  version = "2.47.0"
 
   name                 = "test-vpc"
   cidr                 = "172.16.0.0/16"
@@ -72,9 +76,10 @@ module "vpc" {
 }
 
 module "eks" {
-  source       = "../.."
-  cluster_name = local.cluster_name
-  subnets      = module.vpc.private_subnets
+  source          = "../.."
+  cluster_name    = local.cluster_name
+  cluster_version = "1.17"
+  subnets         = module.vpc.private_subnets
 
   tags = {
     Environment = "test"
@@ -106,6 +111,21 @@ module "eks" {
       }
     }
   }
+
+  # Create security group rules to allow communication between pods on workers and pods in managed node groups.
+  # Set this to true if you have AWS-Managed node groups and Self-Managed worker groups.
+  # See https://github.com/terraform-aws-modules/terraform-aws-eks/issues/1089
+
+  # worker_create_cluster_primary_security_group_rules = true
+
+  # worker_groups_launch_template = [
+  #   {
+  #     name                 = "worker-group-1"
+  #     instance_type        = "t2.small"
+  #     asg_desired_capacity = 2
+  #     public_ip            = true
+  #   }
+  # ]
 
   map_roles    = var.map_roles
   map_users    = var.map_users

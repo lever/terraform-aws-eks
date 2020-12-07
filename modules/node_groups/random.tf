@@ -17,5 +17,8 @@ resource "random_pet" "node_groups" {
     ))
     subnet_ids      = join("|", each.value["subnets"])
     node_group_name = join("-", [var.cluster_name, each.key])
+    launch_template = lookup(each.value, "launch_template_id", null)
   }
+
+  depends_on = [var.ng_depends_on]
 }
