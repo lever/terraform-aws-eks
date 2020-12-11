@@ -193,7 +193,7 @@ resource "aws_autoscaling_group" "workers_launch_template" {
             var.worker_groups_launch_template[count.index],
             "name",
             count.index,
-          )}"
+          )}-eks_asg"
           "propagate_at_launch" = true
         },
         {
@@ -439,7 +439,7 @@ resource "aws_launch_template" "workers_launch_template" {
           var.worker_groups_launch_template[count.index],
           "name",
           count.index,
-        )}"
+        )}-eks_asg"
       },
       var.tags,
     )
