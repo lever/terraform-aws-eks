@@ -271,7 +271,7 @@ resource "aws_launch_configuration" "workers" {
 
   lifecycle {
     create_before_destroy = true
-    ignore_changes = [image_id]
+    ignore_changes = [image_id, user_data]
   }
 
   # Prevent premature access of security group roles and policies by pods that
